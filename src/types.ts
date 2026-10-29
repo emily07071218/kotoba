@@ -17,9 +17,10 @@ export interface Kana {
   seq: number
 }
 
-// ---------- 單字(由 scripts/build-vocab.mjs 產生) ----------
+// ---------- 單字(JLPT 詞庫由 scripts/build-vocab.mjs 產生;主題詞由 data/themes.ts 提供) ----------
 
 export type JLPTLevel = 'N5' | 'N4'
+export type Level = JLPTLevel | '生活'
 
 export interface RubySegment {
   /** 基底文字 */
@@ -34,20 +35,33 @@ export interface VocabExample {
 }
 
 export interface VocabEntry {
-  /** JMdict ent_seq,穩定識別 */
+  /** JMdict ent_seq 或主題詞固定 id */
   id: number
   word: string
   reading: string
-  level: JLPTLevel
+  level: Level
   meaningZh: string
   pos: string[]
   ruby?: RubySegment[]
   example?: VocabExample
+  /** 主題詞所屬分類(月份、天氣……) */
+  theme?: string
+}
+
+// ---------- 日常用語句子與短文 ----------
+
+export type SentenceKind = 'phrase' | 'passage'
+
+export interface SentenceEntry {
+  id: number
+  kind: SentenceKind
+  jp: string
+  zh: string
 }
 
 // ---------- 卡片與進度 ----------
 
-export type CardType = 'kana' | 'vocab'
+export type CardType = 'kana' | 'vocab' | 'sent'
 
 /** 存進 IndexedDB 的卡片(欄位與 ts-fsrs Card 對應,時間用 epoch ms) */
 export interface Card {
@@ -79,6 +93,8 @@ export interface AppSettings {
   kanaNewPerDay: number
   vocabUnlocked: boolean
   kanaGateSkipped: boolean
+  /** 啟用的主題詞分類;null = 全部啟用 */
+  enabledThemes: string[] | null
   lastBackupAt: number | null
   backupReminderDays: number
   ttsVoiceName: string | null
@@ -90,6 +106,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   kanaNewPerDay: 12,
   vocabUnlocked: false,
   kanaGateSkipped: false,
+  enabledThemes: null,
   lastBackupAt: null,
   backupReminderDays: 3,
   ttsVoiceName: null,

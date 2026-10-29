@@ -66,6 +66,7 @@ export default function KanaGate() {
     const ok = val === questions[qidx].correct
     const newScore = score + (ok ? 1 : 0)
     setScore(newScore)
+    // 答錯時停留久一點,讓使用者看清正確答案
     setTimeout(async () => {
       if (qidx + 1 >= questions.length) {
         setDone(true)
@@ -79,7 +80,7 @@ export default function KanaGate() {
         setQidx((i) => i + 1)
         setPicked(null)
       }
-    }, 380)
+    }, ok ? 500 : 1800)
   }
 
   async function skipGate() {

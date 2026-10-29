@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { db, getSettings } from '../db'
-import { availability } from '../session'
+import { availability, SENT_KANA_THRESHOLD, sentUnlocked, VOCAB } from '../session'
+import { THEME_VOCAB } from '../data/themes'
 import { KANA_TOTAL } from '../data/kana'
-import { VOCAB } from '../session'
 import type { AppSettings } from '../types'
 import { download, localDateStr } from '../util'
 import type { BackupFile } from '../types'
@@ -12,8 +12,11 @@ interface HomeData {
   due: number
   newKana: number
   newVocab: number
+  newSent: number
   learnedKana: number
   introducedVocab: number
+  introducedSent: number
+  sentUnlocked: boolean
   streak: number
   settings: AppSettings
   cardCount: number
@@ -51,7 +54,7 @@ export default function Home() {
 
   if (!data) return <p className="muted">載入中…</p>
 
-  const total = data.due + data.newKana + data.newVocab
+  const total = data.due + data.newKana + data.newVocab + data.newSent
   const neverBackedUp = data.settings.lastBackupAt === null
   const daysSinceBackup = neverBackedUp
     ? Infinity
@@ -60,6 +63,8 @@ export default function Home() {
     data.cardCount > 0 &&
     ((neverBackedUp && data.cardCount >= 10) ||
       daysSinceBackup > data.settings.backupReminderDays)
+  const sentWanted = sentUnlocked(data.settings, data.learnedKana)
+  const kanaToGo = Math.max(0, SENT_KANA_THRESHOLD - data.learnedKana)
 
   async function exportBackup() {
     const settings = await getSettings()
@@ -111,7 +116,7 @@ export default function Home() {
         disabled={total === 0}
         onClick={() => (window.location.hash = '#/review')}
       >
-        {total > 0 ? `開始複習(${total} 張)` : '今日完成!明天再來'}
+        {total > 0 ? `開始複習(${total} 張)` : '今日完成!明天再來 🍡'}
       </button>
       {total === 0 && (
         <p className="muted" style={{ textAlign: 'center', marginTop: -6 }}>
@@ -121,7 +126,7 @@ export default function Home() {
 
       <div className="card module">
         <div>
-          <h3>五十音</h3>
+          <h3>🌸 五十音</h3>
           <div className="sub">已開始練習 {data.learnedKana} / {KANA_TOTAL} 個假名</div>
         </div>
         <Link to="/kana">假名表 →</Link>
@@ -129,10 +134,10 @@ export default function Home() {
 
       <div className="card module">
         <div>
-          <h3>單字 {data.settings.vocabUnlocked ? '' : '🔒'}</h3>
+          <h3>📚 單字 {data.settings.vocabUnlocked ? '' : '🔒'}</h3>
           <div className="sub">
             {data.settings.vocabUnlocked
-              ? `已引入 ${data.introducedVocab} / ${VOCAB.length} 詞,今日新詞 +${data.newVocab}`
+              ? `已引入 ${data.introducedVocab} / ${VOCAB.length + THEME_VOCAB.length} 詞,今日新詞 +${data.newVocab}`
               : '通過五十音檢定後解鎖'}
           </div>
         </div>
@@ -140,6 +145,24 @@ export default function Home() {
           <Link to="/vocab">詞庫進度 →</Link>
         ) : (
           <Link to="/gate" className="lock">前往檢定 →</Link>
+        )}
+      </div>
+
+      <div className="card module">
+        <div>
+          <h3>💬 日常用語 {data.sentUnlocked ? '' : '🔒'}</h3>
+          <div className="sub">
+            {!data.settings.vocabUnlocked
+              ? '先通過五十音檢定,解鎖單字後再來'
+              : sentWanted
+                ? `已引入 ${data.introducedSent} 句,每日新句 +${data.newSent}`
+                : `再練 ${kanaToGo} 個假名,日常用語就會出現`}
+          </div>
+        </div>
+        {sentWanted ? (
+          <span className="lock">已融入每日複習 ✓</span>
+        ) : (
+          <Link to="/kana" className="lock">練假名 →</Link>
         )}
       </div>
     </>
